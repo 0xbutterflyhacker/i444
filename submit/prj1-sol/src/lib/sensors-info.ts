@@ -2,6 +2,7 @@ import { Errors, Checkers } from 'cs544-js-utils';
 import { validateFindCommand, SensorType, Sensor, SensorReading,
 	 makeSensorType, makeSensor, makeSensorReading 
        } from './validators.js';
+import { errResult } from 'cs544-js-utils/dist/lib/errors.js';
 
 type FlatReq = Checkers.FlatReq; //dictionary mapping strings to strings
 
@@ -15,8 +16,18 @@ export class SensorsInfo {
   //TODO: define instance fields; good idea to keep private and
   //readonly when possible.
 
+  dict0: Record<string, SensorType>;
+  dict1: Record<string, Sensor>;
+  dict2: Record<string, SensorReading>;
+
   constructor() {
     //TODO
+    //sensortypeid -> sensortype
+    this.dict0 = {};
+    //sensorid -> sensor
+    this.dict1 = {};
+    //sensorid -> sensorreading
+    //let dict2: Record<string, SensorReading> = {};
   }
 
   /** Clear out all sensors info from this object.  Return empty array */
@@ -38,7 +49,8 @@ export class SensorsInfo {
     const sensorTypeResult = makeSensorType(req);
     if (!sensorTypeResult.isOk) return sensorTypeResult;
     const sensorType = sensorTypeResult.val;
-    //TODO add into this
+    //TODO
+    this.dict0[sensorType.id] = sensorType;
     return Errors.okResult([sensorType]);
   }
   
@@ -54,7 +66,19 @@ export class SensorsInfo {
    */
   addSensor(req: Record<string, string>): Errors.Result<Sensor[]> {
     //TODO
-    return Errors.okResult([]);
+    const sensorResult = makeSensor(req);
+    if (!sensorResult.isOk) return sensorResult;
+    const sensor = sensorResult.val;
+    this.dict1[sensor.id] = sensor;
+    let valid: boolean = false;
+    Object.keys(this.dict0).forEach(key => {
+      if (key === sensor.id) valid = true;
+    })
+    if (!valid) {
+      const msg = `unknown sensor type ${sensor.id}`;
+      return errResult(msg);
+    }
+    return Errors.okResult([sensor]);
   }
 
   /** Add sensor reading defined by req to this.  If there is already
