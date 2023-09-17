@@ -2,7 +2,7 @@ import { Errors, Checkers } from 'cs544-js-utils';
 import { validateFindCommand, SensorType, Sensor, SensorReading,
 	 makeSensorType, makeSensor, makeSensorReading 
        } from './validators.js';
-import { errResult } from 'cs544-js-utils/dist/lib/errors.js';
+import { OkResult, errResult } from 'cs544-js-utils/dist/lib/errors.js';
 
 type FlatReq = Checkers.FlatReq; //dictionary mapping strings to strings
 
@@ -114,11 +114,21 @@ export class SensorsInfo {
    *  The returned array must be sorted by sensor-type id.
    */
   findSensorTypes(req: FlatReq) : Errors.Result<SensorType[]> {
-    const validResult: Errors.Result<Checked<FlatReq>> =
-      validateFindCommand('findSensorTypes', req);
+    const validResult: Errors.Result<Checked<FlatReq>> = validateFindCommand('findSensorTypes', req);
     if (!validResult.isOk) return validResult;
     //TODO
-    return Errors.okResult([]);
+    let valid = validResult.val;
+    let arr: SensorType[] = [];
+    for (const s in this.dict0) arr.push(this.dict0[s]);
+    //TODO: filter by what's in valid
+    for (const prop in valid) {
+      if (prop === 'id') arr.filter((sensor_type) => sensor_type.id === valid[prop]);
+      else if (prop === 'manufacturer') arr.filter((sensor_type) => sensor_type.manufacturer === valid[prop]);
+      else if (prop === 'modelNumber') arr.filter((sensor_type) => sensor_type.modelNumber === valid[prop]);
+      else if (prop === 'quantity') arr.filter((sensor_type) => sensor_type.quantity === valid[prop]);
+      else if (prop === 'unit') arr.filter((sensor_type) => sensor_type.unit === valid[prop]);
+    }
+    return Errors.okResult(arr);
   }
   
   /** Find sensors which satify req. Returns [] if none. 
@@ -127,6 +137,11 @@ export class SensorsInfo {
    */
   findSensors(req: FlatReq) : Errors.Result<Sensor[]> { 
     //TODO
+    const validResult: Errors.Result<Checked<FlatReq>> = validateFindCommand('findSensors', req);
+    if (!validResult.isOk) return validResult;
+    let valid = validResult.val;
+    let arr: Sensor[] = [];
+    for (const s in this.dict1) arr.push(this.dict1[s]);
     return Errors.okResult([]);
   }
   
@@ -140,6 +155,11 @@ export class SensorsInfo {
    */
   findSensorReadings(req: FlatReq) : Errors.Result<SensorReading[]> {
     //TODO
+    const validResult: Errors.Result<Checked<FlatReq>> = validateFindCommand('findSensorReadings', req);
+    if (!validResult.isOk) return validResult;
+    let valid = validResult.val;
+    let arr: SensorReading[] = [];
+    for (const s in this.dict2) arr.push(this.dict2[s]);
     return Errors.okResult([]);
   }
   
