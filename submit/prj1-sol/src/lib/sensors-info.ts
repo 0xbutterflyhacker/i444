@@ -15,19 +15,18 @@ export class SensorsInfo {
 
   //TODO: define instance fields; good idea to keep private and
   //readonly when possible.
-
-  dict0: Record<string, SensorType>;
-  dict1: Record<string, Sensor>;
-  dict2: Record<string, SensorReading>;
+  //sensortypeid -> sensortype
+  dict0: { [key: string]: SensorType};
+  //sensorid -> sensor
+  dict1: { [key: string]: Sensor};
+  //sensorid -> sensorreading
+  dict2: { [key: string]: SensorReading};
 
   constructor() {
     //TODO
-    //sensortypeid -> sensortype
     this.dict0 = {};
-    //sensorid -> sensor
     this.dict1 = {};
-    //sensorid -> sensorreading
-    //let dict2: Record<string, SensorReading> = {};
+    this.dict2 = {};
   }
 
   /** Clear out all sensors info from this object.  Return empty array */
@@ -49,7 +48,6 @@ export class SensorsInfo {
     const sensorTypeResult = makeSensorType(req);
     if (!sensorTypeResult.isOk) return sensorTypeResult;
     const sensorType = sensorTypeResult.val;
-    //TODO
     this.dict0[sensorType.id] = sensorType;
     return Errors.okResult([sensorType]);
   }
@@ -69,15 +67,16 @@ export class SensorsInfo {
     const sensorResult = makeSensor(req);
     if (!sensorResult.isOk) return sensorResult;
     const sensor = sensorResult.val;
-    this.dict1[sensor.id] = sensor;
-    let valid: boolean = false;
-    Object.keys(this.dict0).forEach(key => {
-      if (key === sensor.id) valid = true;
-    })
-    if (!valid) {
-      const msg = `unknown sensor type ${sensor.id}`;
-      return errResult(msg);
+    //TODO
+    let found: boolean = false;
+    for (const key in this.dict0) {
+      if (key === sensor.sensorTypeId) found = true;
     }
+    if (!found) {
+      const msg = `unknown sensor type "${sensor.sensorTypeId}"`;
+      return errResult(msg, 'BAD_ID');
+    }
+    this.dict1[sensor.id] = sensor;
     return Errors.okResult([sensor]);
   }
 
@@ -95,7 +94,19 @@ export class SensorsInfo {
     : Errors.Result<SensorReading[]> 
   {
     //TODO
-    return Errors.okResult([]);
+    const sensorReadingResult = makeSensorReading(req);
+    if (!sensorReadingResult.isOk) return sensorReadingResult;
+    const sensorReading = sensorReadingResult.val;
+    let found: boolean = false;
+    for (const key in this.dict1) {
+      if (key === sensorReading.sensorId) found = true;
+    }
+    if (!found) {
+      const msg = `unknown sensor "${sensorReading.sensorId}"`;
+      return errResult(msg, 'BAD_ID');
+    }
+    this.dict2[sensorReading.sensorId] = sensorReading;
+    return Errors.okResult([sensorReading]);
   }
 
   /** Find sensor-types which satify req. Returns [] if none. 
