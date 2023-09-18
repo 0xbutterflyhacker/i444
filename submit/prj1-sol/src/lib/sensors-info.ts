@@ -142,7 +142,11 @@ export class SensorsInfo {
     let valid = validResult.val;
     let arr: Sensor[] = [];
     for (const s in this.dict1) arr.push(this.dict1[s]);
-    return Errors.okResult([]);
+    for (const [prop, value] of Object.entries(valid)) {
+      if (prop === 'id') arr = arr.filter((sensor) => sensor.id === value)
+      if (prop === 'sensorTypeId') arr = arr.filter((sensor) => sensor.sensorTypeId === value)
+    }
+    return Errors.okResult(arr);
   }
   
   /** Find sensor readings which satify req. Returns [] if none.  Note
@@ -160,7 +164,7 @@ export class SensorsInfo {
     let valid = validResult.val;
     let arr: SensorReading[] = [];
     for (const s in this.dict2) arr.push(this.dict2[s]);
-    return Errors.okResult([]);
+    return Errors.okResult(arr);
   }
   
 }
