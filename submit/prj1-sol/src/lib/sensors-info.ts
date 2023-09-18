@@ -121,12 +121,12 @@ export class SensorsInfo {
     let arr: SensorType[] = [];
     for (const s in this.dict0) arr.push(this.dict0[s]);
     //TODO: filter by what's in valid
-    for (const prop in valid) {
-      if (prop === 'id') arr.filter((sensor_type) => sensor_type.id === valid[prop]);
-      else if (prop === 'manufacturer') arr.filter((sensor_type) => sensor_type.manufacturer === valid[prop]);
-      else if (prop === 'modelNumber') arr.filter((sensor_type) => sensor_type.modelNumber === valid[prop]);
-      else if (prop === 'quantity') arr.filter((sensor_type) => sensor_type.quantity === valid[prop]);
-      else if (prop === 'unit') arr.filter((sensor_type) => sensor_type.unit === valid[prop]);
+    for (const [prop, value] of Object.entries(valid)) {
+      if (prop === 'id') arr = arr.filter((sensor_type) => sensor_type.id === value)
+      if (prop === 'manufacturer') arr = arr.filter((sensor_type) => sensor_type.manufacturer === value)
+      if (prop === 'quantity') arr = arr.filter((sensor_type) => sensor_type.quantity === value)
+      if (prop === 'unit') arr = arr.filter((sensor_type) => sensor_type.unit === value)
+      if (prop === 'modelNumber') arr = arr.filter((sensor_type) => sensor_type.modelNumber === value)
     }
     return Errors.okResult(arr);
   }
