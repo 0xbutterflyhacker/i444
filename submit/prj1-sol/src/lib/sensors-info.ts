@@ -3,6 +3,7 @@ import { validateFindCommand, SensorType, Sensor, SensorReading,
 	 makeSensorType, makeSensor, makeSensorReading 
        } from './validators.js';
 import { OkResult, errResult } from 'cs544-js-utils/dist/lib/errors.js';
+import { read } from 'fs';
 
 type FlatReq = Checkers.FlatReq; //dictionary mapping strings to strings
 
@@ -19,8 +20,8 @@ export class SensorsInfo {
   dict0: { [key: string]: SensorType};
   //sensorid -> sensor
   dict1: { [key: string]: Sensor};
-  //sensorid -> sensorreading
-  dict2: { [key: string]: SensorReading};
+  //sensorid -> sensorreading[]
+  dict2: { [key: string]: SensorReading[]};
 
   constructor() {
     //TODO
@@ -96,17 +97,40 @@ export class SensorsInfo {
     //TODO
     const sensorReadingResult = makeSensorReading(req);
     if (!sensorReadingResult.isOk) return sensorReadingResult;
-    const sensorReading = sensorReadingResult.val;
+    const reading = sensorReadingResult.val;
+
+    //does the sensor exist?
     let found: boolean = false;
     for (const key in this.dict1) {
-      if (key === sensorReading.sensorId) found = true;
+      if (key === reading.sensorId) found = true;
     }
     if (!found) {
-      const msg = `unknown sensor "${sensorReading.sensorId}"`;
-      return errResult(msg, 'BAD_ID');
+      const msg = `unknown sensor ${reading.sensorId}`;
+      return errResult(msg, 'BAD_ID')
     }
-    this.dict2[sensorReading.sensorId] = sensorReading;
-    return Errors.okResult([sensorReading]);
+
+    //does the sensor have any readings?
+    let exist: boolean = false;
+    for (const key in this.dict2) {
+      if (key === reading.sensorId) exist = true;
+    }
+    if (!exist) this.dict2[reading.sensorId] = [];
+
+    //does the sensor already have readings for this timestamp?
+    let dupe: boolean = false;
+    let dupe_index: number = 0;
+    for (const [key, val] of Object.entries(this.dict2[reading.sensorId])) {
+      if (val.timestamp === reading.timestamp) {
+        dupe = true;
+        break
+      }
+      else dupe_index++
+    }
+    if (!dupe) this.dict2[reading.sensorId].push(reading);
+    else {
+      this.dict2[reading.sensorId][dupe_index].value = reading.value
+    }
+    return Errors.okResult([reading]);
   }
 
   /** Find sensor-types which satify req. Returns [] if none. 
@@ -116,11 +140,9 @@ export class SensorsInfo {
   findSensorTypes(req: FlatReq) : Errors.Result<SensorType[]> {
     const validResult: Errors.Result<Checked<FlatReq>> = validateFindCommand('findSensorTypes', req);
     if (!validResult.isOk) return validResult;
-    //TODO
     let valid = validResult.val;
     let arr: SensorType[] = [];
     for (const s in this.dict0) arr.push(this.dict0[s]);
-    //TODO: filter by what's in valid
     for (const [prop, value] of Object.entries(valid)) {
       if (prop === 'id') arr = arr.filter((sensor_type) => sensor_type.id === value)
       if (prop === 'manufacturer') arr = arr.filter((sensor_type) => sensor_type.manufacturer === value)
@@ -136,7 +158,6 @@ export class SensorsInfo {
    *  The returned array must be sorted by sensor id.
    */
   findSensors(req: FlatReq) : Errors.Result<Sensor[]> { 
-    //TODO
     const validResult: Errors.Result<Checked<FlatReq>> = validateFindCommand('findSensors', req);
     if (!validResult.isOk) return validResult;
     let valid = validResult.val;
@@ -162,8 +183,25 @@ export class SensorsInfo {
     const validResult: Errors.Result<Checked<FlatReq>> = validateFindCommand('findSensorReadings', req);
     if (!validResult.isOk) return validResult;
     let valid = validResult.val;
+    //console.log(`searching through ${this.dict2[valid['sensorId']].length} readings`)
     let arr: SensorReading[] = [];
-    for (const s in this.dict2) arr.push(this.dict2[s]);
+    for (const r in this.dict2[valid['sensorId']]) arr.push(this.dict2[valid['sensorId']][r])
+
+    if (Object.hasOwn(valid, 'minTimestamp') && Object.hasOwn(valid, 'maxTimestamp')) {
+      arr = arr.filter((reading) => reading.timestamp >= Number(valid['minTimestamp']))
+      arr = arr.filter((reading) => reading.timestamp <= Number(valid['maxTimestamp']))
+    } else {
+      if (Object.hasOwn(valid, 'minTimestamp')) arr = arr.filter((reading) => reading.timestamp >= Number(valid['minTimestamp']))
+      else if (Object.hasOwn(valid, 'maxTimestamp')) arr = arr.filter((reading) => reading.timestamp <= Number(valid['maxTimestamp']))
+    }
+
+    if (Object.hasOwn(valid, 'minValue') && Object.hasOwn(valid, 'maxValue')) {
+      arr = arr.filter((reading) => reading.value >= Number(valid['minValue']))
+      arr = arr.filter((reading) => reading.value <= Number(valid['maxValue']))
+    } else {
+      if (Object.hasOwn(valid, 'minValue')) arr = arr.filter((reading) => reading.value >= Number(valid['minValue']))
+      else if (Object.hasOwn(valid, 'maxValue')) arr = arr.filter((reading) => reading.value <= Number(valid['maxValue']))
+    }
     return Errors.okResult(arr);
   }
   
