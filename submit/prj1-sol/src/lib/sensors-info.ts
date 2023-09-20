@@ -32,7 +32,9 @@ export class SensorsInfo {
 
   /** Clear out all sensors info from this object.  Return empty array */
   clear() : Errors.Result<string[]> {
-    //TODO
+    this.dict0 = {};
+    this.dict1 = {};
+    this.dict2 = {};
     return Errors.okResult([]);
   }
 
@@ -64,11 +66,9 @@ export class SensorsInfo {
    *     'BAD_ID': unknown sensorTypeId.
    */
   addSensor(req: Record<string, string>): Errors.Result<Sensor[]> {
-    //TODO
     const sensorResult = makeSensor(req);
     if (!sensorResult.isOk) return sensorResult;
     const sensor = sensorResult.val;
-    //TODO
     let found: boolean = false;
     for (const key in this.dict0) {
       if (key === sensor.sensorTypeId) found = true;
@@ -100,7 +100,6 @@ export class SensorsInfo {
   addSensorReading(req: Record<string, string>)
     : Errors.Result<SensorReading[]> 
   {
-    //TODO
     const sensorReadingResult = makeSensorReading(req);
     if (!sensorReadingResult.isOk) return sensorReadingResult;
     const reading = sensorReadingResult.val;
@@ -115,7 +114,7 @@ export class SensorsInfo {
       return errResult(msg, 'BAD_ID')
     }
 
-    //does the sensor have any readings?
+    //does the sensor have any readings already?
     let exist: boolean = false;
     for (const key in this.dict2) {
       if (key === reading.sensorId) exist = true;
@@ -156,6 +155,11 @@ export class SensorsInfo {
       if (prop === 'unit') arr = arr.filter((sensor_type) => sensor_type.unit === value)
       if (prop === 'modelNumber') arr = arr.filter((sensor_type) => sensor_type.modelNumber === value)
     }
+    arr = arr.sort((a, b) => {
+      if (a.id > b.id) return 1;
+      if (a.id < b.id) return -1;
+      return 0;
+    });
     return Errors.okResult(arr);
   }
   
@@ -173,6 +177,11 @@ export class SensorsInfo {
       if (prop === 'id') arr = arr.filter((sensor) => sensor.id === value)
       if (prop === 'sensorTypeId') arr = arr.filter((sensor) => sensor.sensorTypeId === value)
     }
+    arr = arr.sort((a, b) => {
+      if (a.id > b.id) return 1;
+      if (a.id < b.id) return -1;
+      return 0;
+    });
     return Errors.okResult(arr);
   }
   
@@ -185,11 +194,9 @@ export class SensorsInfo {
    *  The returned array must be sorted numerically by timestamp.
    */
   findSensorReadings(req: FlatReq) : Errors.Result<SensorReading[]> {
-    //TODO
     const validResult: Errors.Result<Checked<FlatReq>> = validateFindCommand('findSensorReadings', req);
     if (!validResult.isOk) return validResult;
     let valid = validResult.val;
-    //console.log(`searching through ${this.dict2[valid['sensorId']].length} readings`)
     let arr: SensorReading[] = [];
     for (const r in this.dict2[valid['sensorId']]) arr.push(this.dict2[valid['sensorId']][r])
 
@@ -208,6 +215,7 @@ export class SensorsInfo {
       if (Object.hasOwn(valid, 'minValue')) arr = arr.filter((reading) => reading.value >= Number(valid['minValue']))
       else if (Object.hasOwn(valid, 'maxValue')) arr = arr.filter((reading) => reading.value <= Number(valid['maxValue']))
     }
+    arr = arr.sort((a, b) => a.timestamp - b.timestamp);
     return Errors.okResult(arr);
   }
   
