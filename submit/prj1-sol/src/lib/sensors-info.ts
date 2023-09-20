@@ -77,6 +77,12 @@ export class SensorsInfo {
       const msg = `unknown sensor type "${sensor.sensorTypeId}"`;
       return errResult(msg, 'BAD_ID');
     }
+
+    let s_type = this.dict0[sensor.sensorTypeId]
+    if ((sensor.expected.min < s_type.limits.min) || (sensor.expected.max > s_type.limits.max)) {
+      const msg = `expected range [${sensor.expected.min}, ${sensor.expected.max}] of sensor ${sensor.id} is not within the limits [${s_type.limits.min}, ${s_type.limits.max}] of sensor-type "${s_type.id}"`
+      return errResult(msg, 'BAD_RANGE')
+    }
     this.dict1[sensor.id] = sensor;
     return Errors.okResult([sensor]);
   }
