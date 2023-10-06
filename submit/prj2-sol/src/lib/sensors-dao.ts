@@ -30,7 +30,7 @@ const MONGO_OPTIONS = {
 export class SensorsDao {
 
   
-  private constructor() {
+  private constructor(private readonly client: mongo.MongoClient, private readonly sensors: mongo.Collection<DbSensor>, private readonly sensortypes: mongo.Collection<DbSensorType>) {
     //TODO
   }
 
@@ -39,8 +39,17 @@ export class SensorsDao {
    *    DB: a database error was encountered.
    */
   static async make(dbUrl: string) : Promise<Errors.Result<SensorsDao>> {
-    //takes care of all async ops, then call constructor
-    return Errors.errResult('todo', 'TODO');
+    try {
+      const client = await(new mongo.MongoClient(dbUrl, MONGO_OPTIONS)).connect()
+      const db = client.db()
+      const sensors = db.collection<DbSensor>('sensor_collection')
+      const sensortypes = db.collection<DbSensorType>('sensortype_collection')
+      await sensortypes.createIndex('sensor_type_id')
+      await sensors.createIndex('sensor_id')
+      return Errors.okResult(new SensorsDao(client, sensors, sensortypes))
+    } catch (e) {
+      return Errors.errResult(e.message, 'DB')
+    }
   }
 
   /** Release all resources held by this dao.
@@ -49,7 +58,12 @@ export class SensorsDao {
    *    DB: a database error was encountered.
    */
   async close() : Promise<Errors.Result<void>> {
-    return Errors.errResult('todo', 'TODO');
+    try {
+      await this.client.close()
+      return Errors.VOID_RESULT
+    } catch (e) {
+      return Errors.errResult(e.message, 'DB')
+    }
   }
 
   /** Clear out all sensor info in this database
@@ -57,7 +71,13 @@ export class SensorsDao {
    *    DB: a database error was encountered.
    */
   async clear() : Promise<Errors.Result<void>> {
-    return Errors.errResult('todo', 'TODO');
+    try {
+      await this.sensors.deleteMany({})
+      await this.sensortypes.deleteMany({})
+      return Errors.VOID_RESULT
+    } catch (e) {
+      return Errors.errResult(e.message, 'DB')
+    }
   }
 
 
@@ -69,7 +89,16 @@ export class SensorsDao {
   async addSensorType(sensorType: SensorType)
     : Promise<Errors.Result<SensorType>>
   {
-    return Errors.errResult('todo', 'TODO');
+    const s_type: SensorType = sensorType
+    const db_obj = {...s_type, _id: s_type.id}
+    try {
+      const collection = this.sensortypes
+      await collection.insertOne(db_obj)
+    } catch (e) {
+      if (e.code === 11000) return Errors.errResult(e.message, 'EXISTS')
+      else return Errors.errResult(e.message, 'DB')
+    }
+    return Errors.okResult(s_type)
   }
 
   /** Add sensor to this database.
@@ -78,7 +107,16 @@ export class SensorsDao {
    *    DB: a database error was encountered.
    */
   async addSensor(sensor: Sensor) : Promise<Errors.Result<Sensor>> {
-    return Errors.errResult('todo', 'TODO');
+    const s: Sensor = sensor
+    const db_obj = {...s, _id: s.id}
+    try {
+      const collection = this.sensors
+      await collection.insertOne(db_obj)
+    } catch (e) {
+      if (e.code === 11000) return Errors.errResult(e.message, 'EXISTS')
+      else return Errors.errResult(e.message, 'DB')
+    }
+    return Errors.okResult(s)
   }
 
   /** Add sensorReading to this database.
