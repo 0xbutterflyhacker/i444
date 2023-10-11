@@ -159,7 +159,16 @@ export class SensorsDao {
    *    DB: a database error was encountered.
    */
   async findSensors(search: SensorSearch) : Promise<Errors.Result<Sensor[]>> {
-    return Errors.errResult('todo', 'TODO');
+    try {
+      let arr: Sensor[] = []
+      const collection = this.sensors
+      const opt = { projection: {_id: 0}}
+      const query = collection.find(search, opt).sort({id: 1})
+      for await (const s of query) arr.push(s)
+      return Errors.okResult(arr)
+    } catch (e) {
+      return Errors.errResult(e.message, 'DB')
+    }
   }
 
   /** Find sensor readings which satisfy search. Returns [] if none. 
