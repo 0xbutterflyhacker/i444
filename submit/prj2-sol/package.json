@@ -4,7 +4,7 @@
   "description": "Name:\t\tChantal Jenkins B-Number:\tB00783968 Email:\t\tcjenkin1@binghamton.edu",
   "main": "index.js",
   "scripts": {
-    "clean": "shx rn -rf dist",
+    "clean": "shx rm -rf dist",
     "build": "tsc",
     "postbuild": "shx chmod a+x dist/index.js",
     "watch": "tsc --watch",

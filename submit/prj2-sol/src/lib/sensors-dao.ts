@@ -1,3 +1,4 @@
+import { error } from 'console';
 import { SensorType, Sensor, SensorReading,
 	 SensorTypeSearch, SensorSearch, SensorReadingSearch,
        } from './validators.js';
@@ -43,9 +44,9 @@ export class SensorsDao {
       const client = await(new mongo.MongoClient(dbUrl, MONGO_OPTIONS)).connect()
       const db = client.db()
       const sensors = db.collection<DbSensor>('sensor_collection')
-      const sensortypes = db.collection<DbSensorType>('sensortype_collection')
-      await sensortypes.createIndex('sensor_type_id')
-      await sensors.createIndex('sensor_id')
+      const sensortypes = db.collection<DbSensorType>('sensor_type_collection')
+      await sensors.createIndex(['id', 'sensorTypeId', 'period', 'min', 'max'])
+      await sensortypes.createIndex(['id', 'manufacturer', 'modelNumber', 'quantity', 'unit', 'min', 'max'])
       return Errors.okResult(new SensorsDao(client, sensors, sensortypes))
     } catch (e) {
       return Errors.errResult(e.message, 'DB')
@@ -95,7 +96,7 @@ export class SensorsDao {
       const collection = this.sensortypes
       await collection.insertOne(db_obj)
     } catch (e) {
-      if (e.code === 11000) return Errors.errResult(e.message, 'EXISTS')
+      if (e.code === MONGO_DUPLICATE_CODE) return Errors.errResult(e.message, 'EXISTS')
       else return Errors.errResult(e.message, 'DB')
     }
     return Errors.okResult(s_type)
@@ -113,7 +114,7 @@ export class SensorsDao {
       const collection = this.sensors
       await collection.insertOne(db_obj)
     } catch (e) {
-      if (e.code === 11000) return Errors.errResult(e.message, 'EXISTS')
+      if (e.code === MONGO_DUPLICATE_CODE) return Errors.errResult(e.message, 'EXISTS')
       else return Errors.errResult(e.message, 'DB')
     }
     return Errors.okResult(s)
@@ -139,7 +140,16 @@ export class SensorsDao {
   async findSensorTypes(search: SensorTypeSearch)
     : Promise<Errors.Result<SensorType[]>> 
   {
-    return Errors.errResult('todo', 'TODO');
+    try {
+      let arr: SensorType[] = []
+      const collection = this.sensortypes
+      const opt = { projection: {_id: 0}}
+      let query = collection.find(search, opt).sort({id: 1})
+      for await (const s of query) arr.push(s)
+      return Errors.okResult(arr)
+    } catch (e) {
+      return Errors.errResult(e.message, 'DB')
+    }
   }
   
   /** Find sensors which satify search. Returns [] if none. 
