@@ -78,6 +78,7 @@ export class SensorsDao {
     try {
       await this.sensors.deleteMany({})
       await this.sensortypes.deleteMany({})
+      await this.sensorreadings.deleteMany({})
       return Errors.VOID_RESULT
     } catch (e) {
       return Errors.errResult(e.message, 'DB')
