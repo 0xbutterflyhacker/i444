@@ -31,7 +31,7 @@ const MONGO_OPTIONS = {
 export class SensorsDao {
 
   
-  private constructor(private readonly client: mongo.MongoClient, private readonly sensors: mongo.Collection<DbSensor>, private readonly sensortypes: mongo.Collection<DbSensorType>) {
+  private constructor(private readonly client: mongo.MongoClient, private readonly sensors: mongo.Collection<DbSensor>, private readonly sensortypes: mongo.Collection<DbSensorType>, private readonly sensorreadings: mongo.Collection<SensorReading>) {
     //TODO
   }
 
@@ -43,11 +43,14 @@ export class SensorsDao {
     try {
       const client = await(new mongo.MongoClient(dbUrl, MONGO_OPTIONS)).connect()
       const db = client.db()
-      const sensors = db.collection<DbSensor>('sensor_collection')
-      const sensortypes = db.collection<DbSensorType>('sensor_type_collection')
-      await sensors.createIndex(['id', 'sensorTypeId', 'period', 'min', 'max'])
-      await sensortypes.createIndex(['id', 'manufacturer', 'modelNumber', 'quantity', 'unit', 'min', 'max'])
-      return Errors.okResult(new SensorsDao(client, sensors, sensortypes))
+      const sensors = db.collection<DbSensor>('sensors')
+      const sensortypes = db.collection<DbSensorType>('sensor_types')
+      const sensorreadings = db.collection<SensorReading>('sensor_readings')
+      await sensors.createIndex(['id', 'sensorTypeId', 'period', 'expected'])
+      await sensortypes.createIndex(['id', 'manufacturer', 'modelNumber', 'quantity', 'unit', 'expected'])
+      await sensorreadings.createIndex({sensorId: 1, timestamp: 1}, {unique: true})
+      await sensorreadings.createIndex('value')
+      return Errors.okResult(new SensorsDao(client, sensors, sensortypes, sensorreadings))
     } catch (e) {
       return Errors.errResult(e.message, 'DB')
     }
@@ -128,7 +131,16 @@ export class SensorsDao {
   async addSensorReading(sensorReading: SensorReading)
     : Promise<Errors.Result<SensorReading>> 
   {
-    return Errors.errResult('todo', 'TODO');
+    const s_read: SensorReading = sensorReading
+    const db_obj = {...s_read}
+    try {
+      const collection = this.sensorreadings
+      await collection.insertOne(db_obj)
+    } catch (e) {
+      if (e.code === MONGO_DUPLICATE_CODE) return Errors.errResult(e.message, 'EXISTS')
+      else return Errors.errResult(e.message, 'DB')
+    }
+    return Errors.okResult(s_read)
   }
 
   /** Find sensor-types which satify search. Returns [] if none. 
@@ -179,7 +191,26 @@ export class SensorsDao {
   async findSensorReadings(search: SensorReadingSearch)
     : Promise<Errors.Result<SensorReading[]>> 
   {
-    return Errors.errResult('todo', 'TODO');
+    try {
+      let arr: SensorReading[] = []
+      const collection = this.sensorreadings
+      const opt = { projection: {_id: 0}}
+      const query = collection.find({
+        sensorId: search.sensorId,
+        timestamp: {
+          $gte: search.minTimestamp,
+          $lte: search.maxTimestamp
+        },
+        value: {
+          $gte: search.minValue,
+          $lte: search.maxValue
+        }
+      }, opt).sort({timestamp: 1})
+      for await (const r of query) arr.push(r)
+      return Errors.okResult(arr)
+    } catch (e) {
+      return Errors.errResult(e.message, 'DB')
+    }
   }
   
 } //SensorsDao
