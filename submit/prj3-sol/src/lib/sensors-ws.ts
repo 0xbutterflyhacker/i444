@@ -59,6 +59,9 @@ function setupRoutes(app: Express.Application) {
   //TODO: add routes
   app.put(`${base}/sensor-types`, createSensorType(app))
   app.get(`${base}/sensor-types/:id`, getSensorType(app))
+  app.get(`${base}/sensor-types`, findSensorTypes(app))
+
+  app.put(`${base}/sensors`, createSensor(app))
 
   //must be last
   app.use(do404(app));  //custom handler for page not found
@@ -99,6 +102,36 @@ function getSensorType(app: Express.Application) {
     } catch (e) {
       const mapped = mapResultErrors(e)
       res.status(mapped.status).json(mapped)
+    }
+  })
+}
+function findSensorTypes(app: Express.Application) {
+  return (async function(req: RequestWithQuery, res: Express.Response) {
+    try {
+      const q = {...req.query}
+      const q0: {[key: string]: any} = {}
+      for (const [k, v] of Object.entries(q)) if ((k !== "index") && (k !== "count")) q0[k] = v
+      const index = Number(q.index ?? DEFAULT_INDEX)
+      const count = Number(q.count ?? DEFAULT_COUNT)
+      const q1 = {...q0, count: count + 1, index, }
+
+      const result = await app.locals.sensorsInfo.findSensorTypes(q1)
+      if (!result.isOk) throw result
+      const response = pagedResult<SensorType>(req, 'id', result.val)
+      res.json(response)
+    } catch (e) {
+      const mapped = mapResultErrors(e)
+      res.status(mapped.status).json(mapped)
+    }
+  })
+}
+
+function createSensor(app: Express.Application) {
+  return (async function(req: Express.Request, res: Express.Response) {
+    try {
+      
+    } catch (e) {
+
     }
   })
 }

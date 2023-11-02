@@ -45,7 +45,7 @@ describe('web services', () => {
   });
 
 
-  describe.only('sensor-type addition and retrieval', () => {
+  describe('sensor-type addition and retrieval', () => {
 
     let url: string;
     let sensorTypeData: Record<string, string>;
