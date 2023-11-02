@@ -54,9 +54,11 @@ function setupRoutes(app: Express.Application) {
   app.use(Express.json());
 
   //if uncommented, all requests are traced on the console
-  //app.use(doTrace(app));
+  app.use(doTrace(app));
 
   //TODO: add routes
+  app.put(`${base}/sensor-types`, createSensorType(app))
+  app.get(`${base}/sensor-types/:id`, getSensorType(app))
 
   //must be last
   app.use(do404(app));  //custom handler for page not found
@@ -64,6 +66,42 @@ function setupRoutes(app: Express.Application) {
 }
 
 // TODO: add route handlers 
+
+function createSensorType(app: Express.Application) {
+  return (async function(req: Express.Request, res: Express.Response) {
+    try {
+      const result = await app.locals.sensorsInfo.addSensorType(req.body)
+      if (!result.isOk) throw result
+      const sensorType = result.val
+      const { id } = sensorType
+      res.location(selfHref(req, id))
+      const response = selfResult<SensorType>(req, sensorType, STATUS.CREATED)
+      res.status(STATUS.CREATED).json(response)
+    } catch (e) {
+      const mapped = mapResultErrors(e)
+      res.status(mapped.status).json(mapped)
+    }
+  })
+}
+function getSensorType(app: Express.Application) {
+  return (async function(req: Express.Request, res: Express.Response) {
+    try {
+      const { id } = req.params
+      const result = await app.locals.sensorsInfo.findSensorTypes({id})
+      if (!result.isOk) throw result
+      if (result.val.length === 0) {
+        const response = selfResult<SensorType>(req, result.val)
+        res.status(STATUS.NOT_FOUND).json(response)
+      } else {
+        const response = selfResult<SensorType>(req, result.val[0])
+        res.json(response)
+      }
+    } catch (e) {
+      const mapped = mapResultErrors(e)
+      res.status(mapped.status).json(mapped)
+    }
+  })
+}
 
 function doTrace(app: Express.Application) {
   return (async function(req: Express.Request, res: Express.Response, 

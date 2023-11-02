@@ -18,6 +18,7 @@ import DATA from './data/data.js';
 import { SPECS } from './data/make-data.js';
 
 import { assert, expect } from 'chai';
+import { type } from 'os';
 
 const BASE = '/sensors-info';
 
@@ -44,7 +45,7 @@ describe('web services', () => {
   });
 
 
-  describe('sensor-type addition and retrieval', () => {
+  describe.only('sensor-type addition and retrieval', () => {
 
     let url: string;
     let sensorTypeData: Record<string, string>;
