@@ -62,6 +62,8 @@ function setupRoutes(app: Express.Application) {
   app.get(`${base}/sensor-types`, findSensorTypes(app))
 
   app.put(`${base}/sensors`, createSensor(app))
+  app.get(`${base}/sensors/:id`, getSensor(app))
+  app.get(`${base}/sensors`, findSensors(app))
 
   //must be last
   app.use(do404(app));  //custom handler for page not found
@@ -129,9 +131,59 @@ function findSensorTypes(app: Express.Application) {
 function createSensor(app: Express.Application) {
   return (async function(req: Express.Request, res: Express.Response) {
     try {
-      
+      const result = await app.locals.sensorsInfo.addSensor(req.body)
+      if (!result.isOk) throw result
+      const sensor = result.val
+      const { id } = sensor
+      res.location(selfHref(req, id))
+      const response = selfResult<SensorType>(req, sensor, STATUS.CREATED)
+      res.status(STATUS.CREATED).json(response)
     } catch (e) {
+      const mapped = mapResultErrors(e)
+      res.status(mapped.status).json(mapped)
+    }
+  })
+}
+function getSensor(app: Express.Application) {
+  return (async function(req: Express.Request, res: Express.Response) {
+    try {
+      const { id } = req.params
+      const result = await app.locals.sensorsInfo.findSensors({id})
+      if (!result.isOk) throw result
+      const s = result.val
+      if (s.length === 0) {
+        const a = [{message: `unknown sensor id ${id}`, options: {
+          code: "NOT_FOUND"
+        }}]
+        const response: ErrorEnvelope = {isOk: false, status: STATUS.NOT_FOUND, errors: a}
+        res.status(STATUS.NOT_FOUND).json(response)
+      } else {
+        const response = selfResult<SensorType>(req, result.val[0])
+        res.json(response)
+      }
+    } catch (e) {
+      const mapped = mapResultErrors(e)
+      res.status(mapped.status).json(mapped)
+    }
+  })
+}
+function findSensors(app: Express.Application) {
+  return (async function(req: Express.Request, res: Express.Response) {
+    try {
+      const q = {...req.query}
+      const q0: {[key: string]: any} = {}
+      for (const [k, v] of Object.entries(q)) if ((k !== "index") && (k !== "count")) q0[k] = v
+      const index = Number(q.index ?? DEFAULT_INDEX)
+      const count = Number(q.count ?? DEFAULT_COUNT)
+      const q1 = {...q0, count: count + 1, index, }
 
+      const result = await app.locals.sensorsInfo.findSensors(q1)
+      if (!result.isOk) throw result
+      const response = pagedResult<SensorType>(req, 'id', result.val)
+      res.json(response)
+    } catch (e) {
+      const mapped = mapResultErrors(e)
+      res.status(mapped.status).json(mapped)
     }
   })
 }
