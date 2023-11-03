@@ -54,7 +54,7 @@ function setupRoutes(app: Express.Application) {
   app.use(Express.json());
 
   //if uncommented, all requests are traced on the console
-  app.use(doTrace(app));
+  //app.use(doTrace(app));
 
   //TODO: add routes
   app.put(`${base}/sensor-types`, createSensorType(app))
@@ -64,6 +64,9 @@ function setupRoutes(app: Express.Application) {
   app.put(`${base}/sensors`, createSensor(app))
   app.get(`${base}/sensors/:id`, getSensor(app))
   app.get(`${base}/sensors`, findSensors(app))
+
+  app.put(`${base}/sensor-readings`, createSensorReading(app))
+  app.get(`${base}/sensor-readings`, findSensorReadings(app))
 
   //must be last
   app.use(do404(app));  //custom handler for page not found
@@ -168,7 +171,7 @@ function getSensor(app: Express.Application) {
   })
 }
 function findSensors(app: Express.Application) {
-  return (async function(req: Express.Request, res: Express.Response) {
+  return (async function(req: RequestWithQuery, res: Express.Response) {
     try {
       const q = {...req.query}
       const q0: {[key: string]: any} = {}
@@ -179,7 +182,44 @@ function findSensors(app: Express.Application) {
 
       const result = await app.locals.sensorsInfo.findSensors(q1)
       if (!result.isOk) throw result
-      const response = pagedResult<SensorType>(req, 'id', result.val)
+      const response = pagedResult<Sensor>(req, 'id', result.val)
+      res.json(response)
+    } catch (e) {
+      const mapped = mapResultErrors(e)
+      res.status(mapped.status).json(mapped)
+    }
+  })
+}
+
+function createSensorReading(app: Express.Application) {
+  return (async function(req: Express.Request, res: Express.Response) {
+    try {
+      const result = await app.locals.sensorsInfo.addSensorReading(req.body)
+      if (!result.isOk) throw result
+      const s = result.val
+      const { sensorId } = s
+      res.location(selfHref(req, sensorId))
+      const response = selfResult<SensorType>(req, s, STATUS.CREATED)
+      res.status(STATUS.CREATED).json(response)
+    } catch (e) {
+      const mapped = mapResultErrors(e)
+      res.status(mapped.status).json(mapped)
+    }
+  })
+}
+function findSensorReadings(app: Express.Application) {
+  return (async function(req: RequestWithQuery, res: Express.Response) {
+    try {
+      const q = {...req.query}
+      const q0: {[key: string]: any} = {}
+      for (const [k, v] of Object.entries(q)) if ((k !== "index") && (k !== "count")) q0[k] = v
+      const index = Number(q.index ?? DEFAULT_INDEX)
+      const count = Number(q.count ?? DEFAULT_COUNT)
+      const q1 = {...q0, count: count + 1, index, }
+
+      const result = await app.locals.sensorsInfo.findSensorReadings(q1)
+      if (!result.isOk) throw result
+      const response = pagedResult<SensorReading>(req, 'sensorId', result.val)
       res.json(response)
     } catch (e) {
       const mapped = mapResultErrors(e)

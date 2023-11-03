@@ -513,7 +513,7 @@ describe('web services', () => {
     
   });
 
-  describe.only('sensors search', () => {
+  describe('sensors search', () => {
 
     const specs = SPECS['test-sensors'];
     const { sensorTypes, sensors, sensorReadings } = DATA.testFindSensors;
