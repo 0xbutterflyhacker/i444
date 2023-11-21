@@ -16,11 +16,24 @@ export default function makeApp(wsUrl: string) {
     clearErrors('addSensorType')
     add_listener('addSensorType', ws)
   })
-  const f1 = document.querySelector(`#addSensor-form`)!
+  const f1 = document.querySelector('#addSensor-form')!
   f1.addEventListener("submit", (e) => {
     e.preventDefault()
-    clearErrors(`addSensor`)
-    add_listener(`addSensor`, ws)
+    clearErrors('addSensor')
+    add_listener('addSensor', ws)
+  })
+
+  const f2 = document.querySelector('#findSensorTypes-form')!
+  f2.addEventListener("submit", (e) => {
+    e.preventDefault()
+    clearErrors('findSensorTypes')
+    find_listener('findSensorTypes', ws)
+  })
+  const f3 = document.querySelector('#findSensors-form')!
+  f3.addEventListener("submit", (e) => {
+    e.preventDefault()
+    clearErrors('findSensors')
+    find_listener('findSensors', ws)
   })
 }
 
@@ -35,11 +48,8 @@ async function add_listener(rootId: string, ws: SensorsWs) {
   const form: HTMLFormElement = document.querySelector(`#${rootId}-form`)!
   const f0 = getFormData(form)
   let w
-  if (rootId === 'addSensorType') {
-    w = await ws.addSensorType(f0)
-  } else {
-    w = await ws.addSensor(f0)
-  }
+  if (rootId === 'addSensorType') w = await ws.addSensorType(f0)
+  else w = await ws.addSensor(f0)
   if (!w.isOk) displayErrors(rootId, w.errors)
   else {
     const r = document.createElement('dl')
@@ -48,6 +58,25 @@ async function add_listener(rootId: string, ws: SensorsWs) {
     for (const [k, v] of Object.entries(w.val)) r.innerHTML += `<dt>${k}</dt> <dd>${v}</dd>`
     const d = document.querySelector(`#${rootId}-results`)
     d?.insertBefore(r, null)
+  }
+}
+
+async function find_listener(rootId: string, ws: SensorsWs) {
+  const form: HTMLFormElement = document.querySelector(`#${rootId}-form`)!
+  const f0 = getFormData(form)
+  let w
+  if (rootId === 'findSensorTypes') w = await ws.findSensorTypesByReq(f0)
+  else w = await ws.findSensorsByReq(f0)
+  if (!w.isOk) displayErrors(rootId, w.errors)
+  else {
+    for (const i of w.val.values) {
+      const r = document.createElement('dl')
+      r.setAttribute('class', 'result')
+      r.innerHTML = ""
+      for (const [k, v] of Object.entries(i)) r.innerHTML += `<dt>${k}</dt> <dd>${v}</dd>`
+      const d = document.querySelector(`#${rootId}-results`)
+      d?.insertBefore(r, null)
+    }
   }
 }
 

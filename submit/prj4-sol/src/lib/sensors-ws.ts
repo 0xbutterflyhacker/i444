@@ -3,6 +3,7 @@ import { Errors } from 'cs544-js-utils';
 import { SensorType, Sensor } from './validators.js';
 import { PagedEnvelope, } from './response-envelopes.js';
 import { Err } from 'cs544-js-utils/dist/lib/errors.js';
+import { response } from 'express';
 
 export function makeSensorsWs(url: string) {
   return new SensorsWs(url);
@@ -117,7 +118,7 @@ async function addData<T>(url: URL, data: Record<string, string>,
       let [er, ...er0] = [e0.message, e0.options]
       let ret: Errors.ErrResult = Errors.errResult(er, er0)
       
-      for (let [k, v] of Object.entries(data0.errors)) {
+      for (let k of Object.keys(data0.errors)) {
         e0 = data0.errors[k]
         let [er, ...er0] = [e0.message, e0.options]
         ret = ret.addError(er, er0)
@@ -151,7 +152,37 @@ async function findData<T>(url: URL,
 			   displayFn: (t: T) => Record<string, string>)
   : Promise<Errors.Result<PagedValues>>
 {
-  return Errors.errResult('TODO');
+  try {
+    const response = await fetch(url, {method: 'GET'})
+    const data0 = await response.json()
+    if (!data0.isOk) {
+      let e0 = data0.errors.shift()
+      let [er, ...er0] = [e0.message, e0.options]
+      let ret: Errors.ErrResult = Errors.errResult(er, er0)
+      
+      for (let k of Object.keys(data0.errors)) {
+        e0 = data0.errors[k]
+        let [er, ...er0] = [e0.message, e0.options]
+        ret = ret.addError(er, er0)
+      }
+      return ret
+    } else {
+      alert(`${url}`)
+      let f0: Record<string, string>[] = []
+      let f1 = {}
+      for (let r in data0.result) {
+        f1 = displayFn(data0.result[r].result)
+        f0.push(f1)
+        f1 = {}
+      }
+      let p = undefined || data0.links.prev
+      let n = undefined || data0.links.next
+      let f: PagedValues = {values: f0, next: n, prev: p};
+      return Errors.okResult(f)
+    }
+  } catch (e) {
+    return Errors.errResult(e.message)
+  }
 }
 
 /** Given a baseUrl and req, return a URL object which contains
