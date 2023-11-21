@@ -8,11 +8,16 @@ export default function makeApp(wsUrl: string) {
   const ws = makeSensorsWs(wsUrl);
   init();
   //TODO: add call to select initial tab and calls to set up
+  selectTab('addSensorType')
   //form submit listeners
 }
 
 
 //TODO: functions to select a tab and set up form submit listeners
+function selectTab(rootId: string) {
+  const tab = document.querySelector(`#${rootId}-tab`)
+  tab?.setAttribute("checked", "checked")
+}
 
 /** clear out all errors within tab specified by rootId */
 function clearErrors(rootId: string) {
