@@ -10,6 +10,12 @@ export default function makeApp(wsUrl: string) {
   //TODO: add call to select initial tab and calls to set up
   selectTab('addSensorType')
   //form submit listeners
+  const form = document.querySelector('#addSensorType-form')!
+  form.addEventListener("submit", (e) => {
+    e.preventDefault()
+    clearErrors('addSensorType')
+    add_listener('addSensorType', ws)
+  })
 }
 
 
@@ -17,6 +23,21 @@ export default function makeApp(wsUrl: string) {
 function selectTab(rootId: string) {
   const tab = document.querySelector(`#${rootId}-tab`)
   tab?.setAttribute("checked", "checked")
+}
+
+async function add_listener(rootId: string, ws: SensorsWs) {
+  const form: HTMLFormElement = document.querySelector(`#${rootId}-form`)!
+  const f0 = getFormData(form)
+  const w = await ws.addSensorType(f0)
+  if (!w.isOk) displayErrors(rootId, w.errors)
+  else {
+    const r = document.createElement('dl')
+    r.setAttribute('class', 'result')
+    r.innerHTML= ""
+    for (const [k, v] of Object.entries(w.val)) r.innerHTML += `<dt>${k}</dt> <dd>${v}</dd>`
+    const d = document.querySelector(`#${rootId}-results`)
+    d?.insertBefore(r, null)
+  }
 }
 
 /** clear out all errors within tab specified by rootId */

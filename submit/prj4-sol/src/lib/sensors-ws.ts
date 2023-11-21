@@ -2,6 +2,7 @@ import { Errors } from 'cs544-js-utils';
 
 import { SensorType, Sensor } from './validators.js';
 import { PagedEnvelope, } from './response-envelopes.js';
+import { Err } from 'cs544-js-utils/dist/lib/errors.js';
 
 export function makeSensorsWs(url: string) {
   return new SensorsWs(url);
@@ -104,7 +105,31 @@ async function addData<T>(url: URL, data: Record<string, string>,
 			  displayFn: (t: T) => Record<string, string>)
   : Promise<Errors.Result<Record<string, string>>>
 {
-  return Errors.errResult('TODO');
+  try {
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json',},
+      body: JSON.stringify(data)
+    })
+    const data0 = await response.json()
+    if (!data0.isOk) {
+      let e0 = data0.errors.shift()
+      let [er, ...er0] = [e0.message, e0.options]
+      let ret: Errors.ErrResult = Errors.errResult(er, er0)
+      
+      for (let [k, v] of Object.entries(data0.errors)) {
+        e0 = data0.errors[k]
+        let [er, ...er0] = [e0.message, e0.options]
+        ret = ret.addError(er, er0)
+      }
+      return ret
+    } else {
+      const f0 = displayFn(data0.result)
+      return Errors.okResult(f0)
+    }
+  } catch (e) {
+    return Errors.errResult(e.message)
+  }
 }
 
 /** a type representing scrollable results returned by find* services */
