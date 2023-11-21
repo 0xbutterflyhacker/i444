@@ -69,6 +69,20 @@ async function find_listener(rootId: string, ws: SensorsWs) {
   else w = await ws.findSensorsByReq(f0)
   if (!w.isOk) displayErrors(rootId, w.errors)
   else {
+    if (w.val.next) {
+      const n = document.querySelectorAll(`#${rootId}-content div.scroll a[rel="next"]`)!
+      for (const i of n) {
+        i.setAttribute('href', `${w.val.next}`)
+        setVisibility(i as HTMLElement, true)
+      }
+    }
+    if (w.val.prev) {
+      const n = document.querySelectorAll(`#${rootId}-content div.scroll a[rel="prev"]`)!
+      for (const i of n) {
+        i.setAttribute('href', `${w.val.prev}`)
+        setVisibility(i as HTMLElement, true)
+      }
+    }
     for (const i of w.val.values) {
       const r = document.createElement('dl')
       r.setAttribute('class', 'result')

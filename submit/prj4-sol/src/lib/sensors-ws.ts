@@ -167,7 +167,6 @@ async function findData<T>(url: URL,
       }
       return ret
     } else {
-      alert(`${url}`)
       let f0: Record<string, string>[] = []
       let f1 = {}
       for (let r in data0.result) {
@@ -175,9 +174,9 @@ async function findData<T>(url: URL,
         f0.push(f1)
         f1 = {}
       }
-      let p = undefined || data0.links.prev
-      let n = undefined || data0.links.next
-      let f: PagedValues = {values: f0, next: n, prev: p};
+      let p = data0.links.prev
+      let n = data0.links.next
+      let f: PagedValues = {values: f0, next: n?.href, prev: p?.href};
       return Errors.okResult(f)
     }
   } catch (e) {
