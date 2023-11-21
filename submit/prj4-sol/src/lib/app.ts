@@ -10,11 +10,17 @@ export default function makeApp(wsUrl: string) {
   //TODO: add call to select initial tab and calls to set up
   selectTab('addSensorType')
   //form submit listeners
-  const form = document.querySelector('#addSensorType-form')!
-  form.addEventListener("submit", (e) => {
+  const f0 = document.querySelector('#addSensorType-form')!
+  f0.addEventListener("submit", (e) => {
     e.preventDefault()
     clearErrors('addSensorType')
     add_listener('addSensorType', ws)
+  })
+  const f1 = document.querySelector(`#addSensor-form`)!
+  f1.addEventListener("submit", (e) => {
+    e.preventDefault()
+    clearErrors(`addSensor`)
+    add_listener(`addSensor`, ws)
   })
 }
 
@@ -28,7 +34,12 @@ function selectTab(rootId: string) {
 async function add_listener(rootId: string, ws: SensorsWs) {
   const form: HTMLFormElement = document.querySelector(`#${rootId}-form`)!
   const f0 = getFormData(form)
-  const w = await ws.addSensorType(f0)
+  let w
+  if (rootId === 'addSensorType') {
+    w = await ws.addSensorType(f0)
+  } else {
+    w = await ws.addSensor(f0)
+  }
   if (!w.isOk) displayErrors(rootId, w.errors)
   else {
     const r = document.createElement('dl')
