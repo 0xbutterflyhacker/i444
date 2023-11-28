@@ -64,7 +64,7 @@ async function add_listener(rootId: string, ws: SensorsWs) {
 async function find_listener(rootId: string, ws: SensorsWs) {
   const form: HTMLFormElement = document.querySelector(`#${rootId}-form`)!
   const f0 = getFormData(form)
-  let w
+  let w: Errors.Result<PagedValues>
   if (rootId === 'findSensorTypes') w = await ws.findSensorTypesByReq(f0)
   else w = await ws.findSensorsByReq(f0)
   if (!w.isOk) displayErrors(rootId, w.errors)
@@ -74,6 +74,13 @@ async function find_listener(rootId: string, ws: SensorsWs) {
       for (const i of n) {
         i.setAttribute('href', `${w.val.next}`)
         setVisibility(i as HTMLElement, true)
+        let n0 = i.cloneNode(true)
+        n0.addEventListener("click", async (e) => {
+          e.preventDefault()
+          let w = await ws.findSensorTypesByRelLink(`${i.getAttribute('href')}`)
+          if (w.isOk) displayPaged(rootId, w.val, ws)
+        })
+        i.replaceWith(n0)
       }
     }
     if (w.val.prev) {
@@ -81,16 +88,68 @@ async function find_listener(rootId: string, ws: SensorsWs) {
       for (const i of n) {
         i.setAttribute('href', `${w.val.prev}`)
         setVisibility(i as HTMLElement, true)
+        let p0 = i.cloneNode(true)
+        p0.addEventListener("click", async (e) => {
+          e.preventDefault()
+          let w = await ws.findSensorTypesByRelLink(`${i.getAttribute('href')}`)
+          if (w.isOk) displayPaged(rootId, w.val, ws)
+        })
+        i.replaceWith(p0)
       }
     }
-    for (const i of w.val.values) {
-      const r = document.createElement('dl')
-      r.setAttribute('class', 'result')
-      r.innerHTML = ""
-      for (const [k, v] of Object.entries(i)) r.innerHTML += `<dt>${k}</dt> <dd>${v}</dd>`
-      const d = document.querySelector(`#${rootId}-results`)
-      d?.insertBefore(r, null)
+    displayPaged(rootId, w.val, ws)
+  }
+}
+
+function displayPaged(rootId: string, v: PagedValues, ws: SensorsWs) {
+  if (v.next) {
+    const n = document.querySelectorAll(`#${rootId}-content div.scroll a[rel="next"]`)!
+    for (const i of n) {
+      i.setAttribute('href', `${v.next}`)
+      setVisibility(i as HTMLElement, true)
+      let n0 = i.cloneNode(true)
+      n0.addEventListener("click", async (e) => {
+        e.preventDefault()
+        let w = await ws.findSensorTypesByRelLink(`${i.getAttribute('href')}`)
+        if (w.isOk) displayPaged(rootId, w.val, ws)
+      })
+      i.replaceWith(n0)
     }
+  } else {
+    const n = document.querySelectorAll(`#${rootId}-content div.scroll a[rel="next"]`)!
+    for (const i of n) {
+      i.setAttribute('href', '#')
+      setVisibility(i as HTMLElement, false)
+    }
+  }
+  if (v.prev) {
+    const n = document.querySelectorAll(`#${rootId}-content div.scroll a[rel="prev"]`)!
+    for (const i of n) {
+      i.setAttribute('href', `${v.prev}`)
+      setVisibility(i as HTMLElement, true)
+      let p0 = i.cloneNode(true)
+      p0.addEventListener("click", async (e) => {
+        e.preventDefault()
+        let w = await ws.findSensorTypesByRelLink(`${i.getAttribute('href')}`)
+        if (w.isOk) displayPaged(rootId, w.val, ws)
+      })
+      i.replaceWith(p0)
+    }
+  } else {
+    const n = document.querySelectorAll(`#${rootId}-content div.scroll a[rel="prev"]`)!
+    for (const i of n) {
+      i.setAttribute('href', '#')
+      setVisibility(i as HTMLElement, false)
+    }
+  }
+  const d = document.querySelector(`#${rootId}-results`)!
+  d.innerHTML = ""
+  for (const i of v.values) {
+    const r = document.createElement('dl')
+    r.setAttribute('class', 'result')
+    r.innerHTML = ""
+    for (const [k, v] of Object.entries(i)) r.innerHTML += `<dt>${k}</dt> <dd>${v}</dd>`
+    d?.insertBefore(r, null)
   }
 }
 
