@@ -110,7 +110,9 @@ function displayPaged(rootId: string, v: PagedValues, ws: SensorsWs) {
       let n0 = i.cloneNode(true)
       n0.addEventListener("click", async (e) => {
         e.preventDefault()
-        let w = await ws.findSensorTypesByRelLink(`${i.getAttribute('href')}`)
+        let w
+        if (rootId === 'findSensorTypes') w = await ws.findSensorTypesByRelLink(`${i.getAttribute('href')}`)
+        else w = await ws.findSensorsByRelLink(`${i.getAttribute('href')}`)
         if (w.isOk) displayPaged(rootId, w.val, ws)
       })
       i.replaceWith(n0)
@@ -130,7 +132,9 @@ function displayPaged(rootId: string, v: PagedValues, ws: SensorsWs) {
       let p0 = i.cloneNode(true)
       p0.addEventListener("click", async (e) => {
         e.preventDefault()
-        let w = await ws.findSensorTypesByRelLink(`${i.getAttribute('href')}`)
+        let w
+        if (rootId === 'findSensorTypes') w = await ws.findSensorTypesByRelLink(`${i.getAttribute('href')}`)
+        else w = await ws.findSensorsByRelLink(`${i.getAttribute('href')}`)
         if (w.isOk) displayPaged(rootId, w.val, ws)
       })
       i.replaceWith(p0)
