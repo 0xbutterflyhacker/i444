@@ -104,7 +104,19 @@ async function addData<T>(url: URL, data: Record<string, string>,
 			  displayFn: (t: T) => Record<string, string>)
   : Promise<Errors.Result<Record<string, string>>>
 {
-  return Errors.errResult('TODO');
+  const options: Record<string, any> = {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(data)
+  }
+  try {
+    const response = await fetch(url, options)
+    const envelope = await response.json()
+    if (envelope.isOk) return Errors.okResult(displayFn(envelope.result))
+    else return new Errors.ErrResult(envelope.errors)
+  } catch (e) {
+    return Errors.errResult(e)
+  }
 }
 
 /** a type representing scrollable results returned by find* services */
@@ -126,7 +138,19 @@ async function findData<T>(url: URL,
 			   displayFn: (t: T) => Record<string, string>)
   : Promise<Errors.Result<PagedValues>>
 {
-  return Errors.errResult('TODO');
+  try {
+    const envelope = await (await fetch(url)).json()
+    if (envelope.isOk) {
+      const s = envelope as PagedEnvelope<T>
+      return Errors.okResult({
+        next: s.links.next?.href,
+        prev: s.links.prev?.href,
+        values: s.result.map(r => displayFn(r.result))
+      })
+    } else return new Errors.ErrResult(envelope.errors)
+  } catch (e) {
+    return Errors.errResult(e)
+  }
 }
 
 /** Given a baseUrl and req, return a URL object which contains
