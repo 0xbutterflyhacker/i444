@@ -222,7 +222,7 @@ export function FindResultsComponent(props: {rootId: string, data: PagedValues})
   )
 }
 export function FindResult(props: {rootId: string, data: Record<string, string>}) {
-  let r = Object.entries(props.data).map(([k, v]) => <ResultItem data={[k, v]} key={`find-${props.data['ID']}-${v}`}/>)
+  let r = Object.entries(props.data).map(([k, v]) => <ResultItem data={[k, v]} key={`find-${props.data['Sensor Type ID']}-${k}`}/>)
   return (
     <React.Fragment>
       <dl className='result'>
