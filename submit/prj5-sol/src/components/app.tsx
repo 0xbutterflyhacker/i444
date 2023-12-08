@@ -58,6 +58,7 @@ export function AddComponent(props: {rootId: string, sWS: SensorsWs}) {
     const data = Object.fromEntries([...new FormData(form).entries()].map(([key, val]) => [key, val as string]).filter(([_, val]) => val.trim().length > 0))
     let w = await formSubmit(data)
     if (!w.isOk) {
+      alert(w.errors[0].message)
       if (w.errors[0].message === 'Failed to fetch') setFetchData(w.errors)
       else setErrorData(w.errors)
     } else {
@@ -80,7 +81,9 @@ export function ErrComponent(props: {rootId: string, err: any[]}) {
   const e = `${props.rootId}-errors`
   return (
     <React.Fragment>
-      <ul id={e} className={e}></ul>
+      <ul id={e} className={e}>
+        {(props.err.length > 0) ? <li className='error'>{props.err[0].message}</li> : ''}
+      </ul>
     </React.Fragment>
   )
 }
